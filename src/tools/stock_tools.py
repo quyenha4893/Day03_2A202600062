@@ -123,5 +123,71 @@ def compare_stocks(args: str) -> str:
     except Exception as e:
         return f"Error comparing stocks: {str(e)}"
 
+# ── Tool 4: Calculate ─────────────────────────────────────────
 
+def calculate(args: str) -> str:
+    """
+    Perform a calculation on a list of numbers.
+    Input: JSON string with keys "operation" and "values".
+    Supported operations: "sum", "average", "min", "max", "change_pct".
+    - "change_pct" calculates percentage change from first to last value.
+    Example: {"operation": "average", "values": [95000, 93000, 91000]}
+    Returns: the calculation result as a string.
+    """
+    try:
+        params = json.loads(args) if isinstance(args, str) else args
+        operation = params["operation"].lower()
+        values = params["values"]
+    except (json.JSONDecodeError, KeyError) as e:
+        return f'Error: Invalid input. Expected JSON with "operation" and "values". Got: {e}'
+
+    if not isinstance(values, list) or len(values) == 0:
+        return "Error: 'values' must be a non-empty list of numbers."
+
+    try:
+        values = [float(v) for v in values]
+    except (ValueError, TypeError):
+        return "Error: All values must be numbers."
+
+    if operation == "sum":
+        return f"{sum(values)}"
+    elif operation == "average":
+        return f"{sum(values) / len(values)}"
+    elif operation == "min":
+        return f"{min(values)}"
+    elif operation == "max":
+        return f"{max(values)}"
+    elif operation == "change_pct":
+        if values[0] == 0:
+            return "Error: First value cannot be zero for percentage change."
+        pct = (values[-1] - values[0]) / values[0] * 100
+        return f"{round(pct, 2)}%"
+    else:
+        return f"Error: Unknown operation '{operation}'. Supported: sum, average, min, max, change_pct."
+
+
+# ── Tool Registry (for ReAct Agent) ───────────────────────────
+
+STOCK_TOOLS = [
+    {
+        "name": "fetch_CafeF_stock",
+        "description": "Fetch the latest 5 trading days of a Vietnamese stock from Cafef. Input: stock ticker symbol as a string (e.g. 'VNM', 'FPT').",
+        "function": fetch_Cafef_stock,
+    },
+    {
+        "name": "fetch_FireAnt_stock",
+        "description": 'Fetch historical stock data from FireAnt for a date range. Input: JSON string with "ticker", "start_date" (YYYY-MM-DD), "end_date" (YYYY-MM-DD). Example: {"ticker": "FPT", "start_date": "2025-01-01", "end_date": "2025-01-31"}',
+        "function": fetch_FireAnt_stock,
+    },
+    {
+        "name": "compare_stocks",
+        "description": 'Compare price performance of two Vietnamese stocks over the latest 5 trading days. Input: JSON string with "ticker1" and "ticker2". Example: {"ticker1": "FPT", "ticker2": "VNM"}',
+        "function": compare_stocks,
+    },
+    {
+        "name": "calculate",
+        "description": 'Perform math on a list of numbers. Input: JSON string with "operation" (sum/average/min/max/change_pct) and "values" (list of numbers). Example: {"operation": "average", "values": [95000, 93000, 91000]}',
+        "function": calculate,
+    },
+]
 
